@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "33833829555",
+    "project_id": "serveconnect-414ee",
+    "storage_bucket": "serveconnect-414ee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:33833829555:android:fe105def7ff6d31fec5cc6",
+        "android_client_info": {
+          "package_name": "com.lauren.serveconnect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCsUyvo9ZFY7uUTKWgRo_h8s7AvrNPVuQY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
