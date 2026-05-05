@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -134,7 +135,7 @@ fun ServiceProviderScreen(
             Button(
                 onClick = {
                     val newPost = ServicePost(
-                        id = System.currentTimeMillis().toString(),
+                        id = "", // Let Firestore generate the ID or handled by repo
                         providerId = providerId,
                         providerName = providerName,
                         title = title,
@@ -150,7 +151,8 @@ fun ServiceProviderScreen(
                     .height(56.dp),
                 enabled = title.isNotBlank() && description.isNotBlank() && price.isNotBlank() && category.isNotBlank() && phoneNumber.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.Black // Explicitly setting black for contrast on yellow
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {

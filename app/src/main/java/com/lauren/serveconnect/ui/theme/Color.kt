@@ -2,13 +2,13 @@ package com.lauren.serveconnect.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Primary: Deep Modern Blue
-val BrandPrimary = Color(0xFF2D31FA)
-val BrandPrimaryDark = Color(0xFF191C91)
+// Primary: Vibrant Yellow
+val BrandPrimary = Color(0xFFFFD700)
+val BrandPrimaryLight = Color(0xFFFFFDE7)
 
-// Secondary: Vibrant Teal (Success/Action)
-val BrandSecondary = Color(0xFF00D084)
-val BrandSecondaryDark = Color(0xFF00A368)
+// Secondary: Professional Blue
+val BrandSecondary = Color(0xFF007BFF)
+val BrandSecondaryDark = Color(0xFF0056b3)
 
 // Neutrals
 val BackgroundLight = Color(0xFFF8F9FE)

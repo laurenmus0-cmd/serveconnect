@@ -4,6 +4,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.lauren.serveconnect.models.User
 import com.lauren.serveconnect.utils.Constants
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 
 class AuthRepository {
 
@@ -47,14 +50,13 @@ class AuthRepository {
     fun loginUser(
         email: String,
         password: String,
-        onSuccess: (String) -> Unit,   // returns role so we know which dashboard to open
+        onSuccess: (String) -> Unit,
         onFailure: (String) -> Unit
     ) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnSuccessListener { result ->
                 val uid = result.user?.uid ?: return@addOnSuccessListener
 
-                // Get user role from Firestore
                 firestore.collection(Constants.COLLECTION_USERS)
                     .document(uid)
                     .get()
@@ -67,22 +69,32 @@ class AuthRepository {
             .addOnFailureListener { onFailure(it.message ?: "Login failed") }
     }
 
-    // LOGOUT
     fun logoutUser() {
         auth.signOut()
     }
 
-    // CHECK if user is already logged in
-    fun isUserLoggedIn(): Boolean {
-        return auth.currentUser != null
+    fun isUserLoggedIn(): Boolean = auth.currentUser != null
+
+    fun getCurrentUserId(): String = auth.currentUser?.uid ?: ""
+
+    // FETCH User Details (Real-time Flow)
+    fun getUserDetailsFlow(uid: String): Flow<User?> = callbackFlow {
+        val docRef = firestore.collection(Constants.COLLECTION_USERS).document(uid)
+        val subscription = docRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                // Silently handle error or log it
+                return@addSnapshotListener
+            }
+            if (snapshot != null && snapshot.exists()) {
+                val user = snapshot.toObject(User::class.java)
+                trySend(user)
+            } else {
+                trySend(null)
+            }
+        }
+        awaitClose { subscription.remove() }
     }
 
-    // GET current user ID
-    fun getCurrentUserId(): String {
-        return auth.currentUser?.uid ?: ""
-    }
-
-    // FETCH User Details
     fun getUserDetails(uid: String, onSuccess: (User) -> Unit, onFailure: (String) -> Unit) {
         firestore.collection(Constants.COLLECTION_USERS)
             .document(uid)

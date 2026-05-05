@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -28,6 +29,7 @@ import com.lauren.serveconnect.ui.provider.ServiceProviderScreen
 import com.lauren.serveconnect.ui.signup.SignUpScreen
 import com.lauren.serveconnect.ui.splash.SplashScreen
 import com.lauren.serveconnect.ui.theme.ServeConnectTheme
+import com.lauren.serveconnect.viewmodel.AuthState
 import com.lauren.serveconnect.viewmodel.AuthViewModel
 import com.lauren.serveconnect.viewmodel.ChatViewModel
 import com.lauren.serveconnect.viewmodel.ServiceViewModel
@@ -68,57 +70,46 @@ class MainActivity : ComponentActivity() {
                             composable("login") {
                                 LoginScreen(
                                     onLoginClick = { email, password ->
-                                        auth.signInWithEmailAndPassword(email, password)
-                                            .addOnSuccessListener {
-                                                authViewModel.fetchUserDetails()
-                                                navController.navigate("home") {
-                                                    popUpTo("login") { inclusive = true }
-                                                }
-                                            }
-                                            .addOnFailureListener {
-                                                Toast.makeText(context, "Login failed: ${it.message}", Toast.LENGTH_SHORT).show()
-                                            }
+                                        authViewModel.loginUser(email, password)
                                     },
                                     onSignUpClick = {
                                         navController.navigate("signup")
                                     }
                                 )
+
+                                val authState by authViewModel.authState.collectAsState()
+                                LaunchedEffect(authState) {
+                                    if (authState is AuthState.Success) {
+                                        authViewModel.fetchUserDetails()
+                                        navController.navigate("home") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
+                                    } else if (authState is AuthState.Error) {
+                                        Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             }
                             composable("signup") {
                                 SignUpScreen(
                                     onSignUpClick = { name, email, phone, password, role ->
-                                        auth.createUserWithEmailAndPassword(email, password)
-                                            .addOnSuccessListener { result ->
-                                                val userId = result.user?.uid
-                                                val userMap = hashMapOf(
-                                                    "fullName" to name,
-                                                    "email" to email,
-                                                    "phone" to phone,
-                                                    "role" to role,
-                                                    "uid" to userId,
-                                                    "createdAt" to System.currentTimeMillis()
-                                                )
-                                                
-                                                if (userId != null) {
-                                                    val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                                                    db.collection("users").document(userId)
-                                                        .set(userMap)
-                                                        .addOnSuccessListener {
-                                                            authViewModel.fetchUserDetails()
-                                                            navController.navigate("home") {
-                                                                popUpTo("signup") { inclusive = true }
-                                                            }
-                                                        }
-                                                }
-                                            }
-                                            .addOnFailureListener {
-                                                Toast.makeText(context, "Sign up failed: ${it.message}", Toast.LENGTH_SHORT).show()
-                                            }
+                                        authViewModel.registerUser(email, password, name, phone, role)
                                     },
                                     onLoginClick = {
                                         navController.popBackStack()
                                     }
                                 )
+                                
+                                // Observe auth state to navigate on success
+                                val authState by authViewModel.authState.collectAsState()
+                                LaunchedEffect(authState) {
+                                    if (authState is AuthState.Success) {
+                                        navController.navigate("home") {
+                                            popUpTo("signup") { inclusive = true }
+                                        }
+                                    } else if (authState is AuthState.Error) {
+                                        Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             }
                             composable("home") {
                                 HomeScreen(

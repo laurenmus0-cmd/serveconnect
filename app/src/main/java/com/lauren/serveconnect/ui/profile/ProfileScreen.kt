@@ -28,9 +28,33 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit
 ) {
     val userDetails by viewModel.userDetails.collectAsState()
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.fetchUserDetails()
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Logout") },
+            text = { Text("Are you sure you want to log out of your account?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogoutClick()
+                    }
+                ) {
+                    Text("Logout", color = Color(0xFFD32F2F))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -40,6 +64,15 @@ fun ProfileScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onPrimary)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showLogoutDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Logout,
+                            contentDescription = "Logout",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -102,20 +135,6 @@ fun ProfileScreen(
             ProfileInfoItem(icon = Icons.Default.Email, label = "Email Address", value = userDetails?.email ?: "N/A")
             ProfileInfoItem(icon = Icons.Default.Phone, label = "Phone Number", value = userDetails?.phone ?: "N/A")
             ProfileInfoItem(icon = Icons.Default.LocationOn, label = "Work Location", value = userDetails?.location ?: "Not set")
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            OutlinedButton(
-                onClick = onLogoutClick,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFD32F2F)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD32F2F)),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Logout, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Logout Account", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            }
         }
     }
 }

@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,14 +41,14 @@ fun HomeScreen(
                 title = { Text("ServeConnect", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                    titleContentColor = Color.Black
                 ),
                 actions = {
                     IconButton(onClick = onMessagesClick) {
-                        Icon(Icons.Default.Chat, contentDescription = "Messages", tint = MaterialTheme.colorScheme.onPrimary)
+                        Icon(Icons.Default.Chat, contentDescription = "Messages", tint = Color.Black)
                     }
                     IconButton(onClick = onProfileClick) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile", tint = MaterialTheme.colorScheme.onPrimary)
+                        Icon(Icons.Default.Person, contentDescription = "Profile", tint = Color.Black)
                     }
                 }
             )
@@ -57,8 +56,8 @@ fun HomeScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onPostServiceClick,
-                containerColor = MaterialTheme.colorScheme.secondary,
-                contentColor = MaterialTheme.colorScheme.onSecondary
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.Black
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Post Service")
             }
@@ -80,7 +79,7 @@ fun HomeScreen(
 
             if (services.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No services available. Be the first to post!", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+                    Text("No services available. Be the first to post!", color = Color.Gray)
                 }
             } else {
                 LazyColumn(
@@ -103,9 +102,10 @@ fun ServiceItem(service: ServicePost, onChatClick: () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Color(0xFFFFFDE7) // Light yellow tint background
         ),
-        elevation = CardDefaults.cardElevation(4.dp),
+        elevation = CardDefaults.cardElevation(6.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
@@ -119,20 +119,20 @@ fun ServiceItem(service: ServicePost, onChatClick: () -> Unit) {
                 Text(
                     text = service.title,
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.secondary // Blue
                 )
                 
                 Surface(
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(8.dp)
+                    color = MaterialTheme.colorScheme.primary, // Yellow
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
                         text = service.price,
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.secondary,
+                        color = Color.Black,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
             }
@@ -142,24 +142,23 @@ fun ServiceItem(service: ServicePost, onChatClick: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(36.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = service.providerName.take(1).uppercase(),
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 14.sp
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = service.providerName,
+                    text = "By ${service.providerName}",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Black
                 )
             }
 
@@ -168,7 +167,7 @@ fun ServiceItem(service: ServicePost, onChatClick: () -> Unit) {
             Text(
                 text = service.description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                color = Color.DarkGray,
                 maxLines = 2,
                 lineHeight = 20.sp
             )
@@ -179,13 +178,14 @@ fun ServiceItem(service: ServicePost, onChatClick: () -> Unit) {
                 onClick = onChatClick,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.secondary // Blue
                 ),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(vertical = 12.dp)
             ) {
-                Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Message Provider", fontWeight = FontWeight.Bold)
+                Text("Message Provider", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
     }
