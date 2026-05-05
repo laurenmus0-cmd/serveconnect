@@ -13,36 +13,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = YellowPrimary,
-    secondary = BlueSecondary,
-    tertiary = YellowDark,
-    background = DarkGrey,
-    surface = DarkGrey,
-    onPrimary = Black,
+    primary = BrandPrimary,
+    secondary = BrandSecondary,
+    tertiary = BrandPrimaryDark,
+    background = BackgroundDark,
+    surface = SurfaceDark,
+    onPrimary = White,
     onSecondary = White,
-    onTertiary = Black,
+    onTertiary = White,
     onBackground = White,
-    onSurface = White,
+    onSurface = White
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = YellowPrimary,
-    secondary = BlueSecondary,
-    tertiary = BlueDark,
-    background = White,
-    surface = LightGrey,
-    onPrimary = Black,
+    primary = BrandPrimary,
+    secondary = BrandSecondary,
+    tertiary = BrandSecondaryDark,
+    background = BackgroundLight,
+    surface = SurfaceLight,
+    onPrimary = White,
     onSecondary = White,
     onTertiary = White,
-    onBackground = Black,
-    onSurface = Black
+    onBackground = TextPrimary,
+    onSurface = TextPrimary
 )
 
 @Composable
 fun ServeConnectTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = false, // Set to false to prefer our custom brand colors
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
