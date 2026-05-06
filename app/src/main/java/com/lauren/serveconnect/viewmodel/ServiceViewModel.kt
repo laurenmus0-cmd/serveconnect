@@ -32,4 +32,11 @@ class ServiceViewModel : ViewModel() {
             onFailure = { onComplete(false, it.message) }
         )
     }
+
+    fun updateService(service: ServicePost, onComplete: (Boolean, String?) -> Unit) {
+        repository.updateService(service,
+            onSuccess = { onComplete(true, null) },
+            onFailure = { onComplete(false, it.message) }
+        )
+    }
 }

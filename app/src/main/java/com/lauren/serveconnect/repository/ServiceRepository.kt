@@ -30,4 +30,14 @@ class ServiceRepository {
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener { onFailure(it) }
     }
+
+    fun updateService(service: ServicePost, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+        if (service.id.isEmpty()) {
+            onFailure(Exception("Service ID is empty"))
+            return
+        }
+        servicesCollection.document(service.id).set(service)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { onFailure(it) }
+    }
 }

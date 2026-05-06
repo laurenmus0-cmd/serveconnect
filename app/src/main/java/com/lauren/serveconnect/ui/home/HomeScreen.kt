@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,7 +28,9 @@ import com.lauren.serveconnect.viewmodel.ServiceViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    currentUserId: String,
     onPostServiceClick: () -> Unit,
+    onEditServiceClick: (ServicePost) -> Unit,
     onChatClick: (ServicePost) -> Unit,
     onProfileClick: () -> Unit,
     onMessagesClick: () -> Unit,
@@ -87,7 +90,12 @@ fun HomeScreen(
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     items(services) { service ->
-                        ServiceItem(service = service, onChatClick = { onChatClick(service) })
+                        ServiceItem(
+                            service = service,
+                            isOwner = service.providerId == currentUserId,
+                            onChatClick = { onChatClick(service) },
+                            onEditClick = { onEditServiceClick(service) }
+                        )
                     }
                 }
             }
@@ -96,7 +104,12 @@ fun HomeScreen(
 }
 
 @Composable
-fun ServiceItem(service: ServicePost, onChatClick: () -> Unit) {
+fun ServiceItem(
+    service: ServicePost,
+    isOwner: Boolean,
+    onChatClick: () -> Unit,
+    onEditClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -174,18 +187,34 @@ fun ServiceItem(service: ServicePost, onChatClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = onChatClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary // Blue
-                ),
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(vertical = 12.dp)
-            ) {
-                Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Message Provider", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            if (isOwner) {
+                Button(
+                    onClick = onEditClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary // Yellow
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(vertical = 12.dp)
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.Black)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Edit My Service", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+                }
+            } else {
+                Button(
+                    onClick = onChatClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary // Blue
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(vertical = 12.dp)
+                ) {
+                    Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Message Provider", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
             }
         }
     }

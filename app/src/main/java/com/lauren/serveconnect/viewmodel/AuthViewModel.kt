@@ -66,6 +66,8 @@ class AuthViewModel : ViewModel() {
 
     fun isUserLoggedIn() = repository.isUserLoggedIn()
 
+    fun getCurrentUserId() = repository.getCurrentUserId()
+
     fun fetchUserDetails() {
         val uid = repository.getCurrentUserId()
         if (uid.isNotEmpty() && userObservationJob == null) {
@@ -75,6 +77,24 @@ class AuthViewModel : ViewModel() {
                 }
             }
         }
+    }
+
+    fun updateProfile(fullName: String, email: String, phone: String, location: String, profileImageUrl: String, onComplete: (Boolean, String?) -> Unit) {
+        val uid = repository.getCurrentUserId()
+        if (uid.isEmpty()) {
+            onComplete(false, "User not logged in")
+            return
+        }
+
+        val updates = mapOf(
+            "fullName" to fullName,
+            "email" to email,
+            "phone" to phone,
+            "location" to location,
+            "profileImageUrl" to profileImageUrl
+        )
+
+        repository.updateUserDetails(uid, updates, onComplete)
     }
 }
 

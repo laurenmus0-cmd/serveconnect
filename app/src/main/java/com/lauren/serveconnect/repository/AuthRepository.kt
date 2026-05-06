@@ -1,7 +1,10 @@
 package com.lauren.serveconnect.repository
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.SetOptions
 import com.lauren.serveconnect.models.User
 import com.lauren.serveconnect.utils.Constants
 import kotlinx.coroutines.channels.awaitClose
@@ -86,7 +89,7 @@ class AuthRepository {
                 return@addSnapshotListener
             }
             if (snapshot != null && snapshot.exists()) {
-                val user = snapshot.toObject(User::class.java)
+                val user = snapshot.toObject(User::class.java)?.copy(uid = snapshot.id)
                 trySend(user)
             } else {
                 trySend(null)
@@ -108,5 +111,28 @@ class AuthRepository {
                 }
             }
             .addOnFailureListener { onFailure(it.message ?: "Failed to fetch user") }
+    }
+
+    fun updateUserDetails(uid: String, updates: Map<String, Any>, onComplete: (Boolean, String?) -> Unit) {
+        firestore.collection(Constants.COLLECTION_USERS)
+            .document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    firestore.collection(Constants.COLLECTION_USERS)
+                        .document(uid)
+                        .update(updates)
+                        .addOnSuccessListener { onComplete(true, null) }
+                        .addOnFailureListener { onComplete(false, it.message) }
+                } else {
+                    // If document doesn't exist (shouldn't happen but safe to handle), use set
+                    firestore.collection(Constants.COLLECTION_USERS)
+                        .document(uid)
+                        .set(updates, com.google.firebase.firestore.SetOptions.merge())
+                        .addOnSuccessListener { onComplete(true, null) }
+                        .addOnFailureListener { onComplete(false, it.message) }
+                }
+            }
+            .addOnFailureListener { onComplete(false, it.message) }
     }
 }

@@ -33,6 +33,9 @@ import com.lauren.serveconnect.viewmodel.AuthState
 import com.lauren.serveconnect.viewmodel.AuthViewModel
 import com.lauren.serveconnect.viewmodel.ChatViewModel
 import com.lauren.serveconnect.viewmodel.ServiceViewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -113,8 +116,12 @@ class MainActivity : ComponentActivity() {
                             }
                             composable("home") {
                                 HomeScreen(
+                                    currentUserId = auth.currentUser?.uid ?: "",
                                     onPostServiceClick = {
                                         navController.navigate("post_service")
+                                    },
+                                    onEditServiceClick = { service ->
+                                        navController.navigate("post_service?serviceId=${service.id}")
                                     },
                                     onChatClick = { service ->
                                         navController.navigate("chat/${service.providerId}/${service.providerName}")
@@ -138,27 +145,50 @@ class MainActivity : ComponentActivity() {
                                     viewModel = chatViewModel
                                 )
                             }
-                            composable("post_service") {
+                            composable(
+                                "post_service?serviceId={serviceId}",
+                                arguments = listOf(navArgument("serviceId") { 
+                                    nullable = true
+                                    defaultValue = null 
+                                })
+                            ) { backStackEntry ->
+                                val serviceId = backStackEntry.arguments?.getString("serviceId")
+                                val services by serviceViewModel.services.collectAsState()
+                                val serviceToEdit = services.find { it.id == serviceId }
+
                                 ServiceProviderScreen(
+                                    serviceToEdit = serviceToEdit,
                                     providerId = auth.currentUser?.uid ?: "",
                                     providerName = userDetails?.fullName ?: "Anonymous",
                                     onBackClick = { navController.popBackStack() },
                                     onPostService = { servicePost ->
-                                        serviceViewModel.postService(servicePost) { success, error ->
+                                        val callback: (Boolean, String?) -> Unit = { success, error ->
                                             if (success) {
-                                                Toast.makeText(context, "Job has been posted successfully!", Toast.LENGTH_SHORT).show()
+                                                val msg = if (serviceId != null) "Updated successfully!" else "Posted successfully!"
+                                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                                 navController.popBackStack()
                                             } else {
                                                 Toast.makeText(context, "Error: $error", Toast.LENGTH_SHORT).show()
                                             }
+                                        }
+
+                                        if (serviceId != null) {
+                                            serviceViewModel.updateService(servicePost, callback)
+                                        } else {
+                                            serviceViewModel.postService(servicePost, callback)
                                         }
                                     }
                                 )
                             }
                             composable("profile") {
                                 ProfileScreen(
-                                    viewModel = authViewModel,
+                                    currentUserId = auth.currentUser?.uid ?: "",
+                                    authViewModel = authViewModel,
+                                    serviceViewModel = serviceViewModel,
                                     onBackClick = { navController.popBackStack() },
+                                    onEditServiceClick = { service ->
+                                        navController.navigate("post_service?serviceId=${service.id}")
+                                    },
                                     onLogoutClick = {
                                         authViewModel.logoutUser()
                                         navController.navigate("login") {

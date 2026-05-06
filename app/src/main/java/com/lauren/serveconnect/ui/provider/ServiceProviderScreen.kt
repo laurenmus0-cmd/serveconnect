@@ -21,21 +21,34 @@ import com.lauren.serveconnect.model.ServicePost
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServiceProviderScreen(
+    serviceToEdit: ServicePost? = null,
     providerId: String,
     providerName: String,
     onBackClick: () -> Unit,
     onPostService: (ServicePost) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var price by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf(serviceToEdit?.title ?: "") }
+    var description by remember { mutableStateOf(serviceToEdit?.description ?: "") }
+    var price by remember { mutableStateOf(serviceToEdit?.price ?: "") }
+    var category by remember { mutableStateOf(serviceToEdit?.category ?: "") }
+    var phoneNumber by remember { mutableStateOf(serviceToEdit?.phoneNumber ?: "") }
+
+    val isEditMode = serviceToEdit != null
+
+    LaunchedEffect(serviceToEdit) {
+        serviceToEdit?.let {
+            title = it.title
+            description = it.description
+            price = it.price
+            category = it.category
+            phoneNumber = it.phoneNumber
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Post a Service", fontWeight = FontWeight.Bold) },
+                title = { Text(if (isEditMode) "Edit Service" else "Post a Service", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onPrimary)
@@ -134,17 +147,27 @@ fun ServiceProviderScreen(
 
             Button(
                 onClick = {
-                    val newPost = ServicePost(
-                        id = "", // Let Firestore generate the ID or handled by repo
-                        providerId = providerId,
-                        providerName = providerName,
-                        title = title,
-                        description = description,
-                        price = price,
-                        category = category,
-                        phoneNumber = phoneNumber
-                    )
-                    onPostService(newPost)
+                    val post = if (isEditMode) {
+                        serviceToEdit!!.copy(
+                            title = title,
+                            description = description,
+                            price = price,
+                            category = category,
+                            phoneNumber = phoneNumber
+                        )
+                    } else {
+                        ServicePost(
+                            id = "", // Let Firestore generate the ID or handled by repo
+                            providerId = providerId,
+                            providerName = providerName,
+                            title = title,
+                            description = description,
+                            price = price,
+                            category = category,
+                            phoneNumber = phoneNumber
+                        )
+                    }
+                    onPostService(post)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -157,7 +180,7 @@ fun ServiceProviderScreen(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    "Publish Service",
+                    if (isEditMode) "Update Service" else "Publish Service",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )

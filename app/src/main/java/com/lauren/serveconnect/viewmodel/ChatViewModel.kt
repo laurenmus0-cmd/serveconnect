@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+
 class ChatViewModel : ViewModel() {
     private val repository = ChatRepository()
 
@@ -27,15 +30,17 @@ class ChatViewModel : ViewModel() {
                 }
 
                 val summaries = conversations.map { (otherId, msgs) ->
-                    val lastMsg = msgs.maxByOrNull { it.timestamp }
-                    val name = repository.getUserName(otherId)
-                    ChatSummary(
-                        otherUserId = otherId,
-                        otherUserName = name,
-                        lastMessage = lastMsg?.message ?: "",
-                        timestamp = lastMsg?.timestamp ?: 0L
-                    )
-                }.sortedByDescending { it.timestamp }
+                    async {
+                        val lastMsg = msgs.maxByOrNull { it.timestamp }
+                        val name = repository.getUserName(otherId)
+                        ChatSummary(
+                            otherUserId = otherId,
+                            otherUserName = name,
+                            lastMessage = lastMsg?.message ?: "",
+                            timestamp = lastMsg?.timestamp ?: 0L
+                        )
+                    }
+                }.awaitAll().sortedByDescending { it.timestamp }
                 
                 _chatList.value = summaries
             }
