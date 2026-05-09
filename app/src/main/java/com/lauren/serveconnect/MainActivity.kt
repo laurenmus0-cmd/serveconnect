@@ -12,6 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,6 +22,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
+import com.lauren.serveconnect.models.User
 import com.lauren.serveconnect.ui.chat.ChatScreen
 import com.lauren.serveconnect.ui.home.HomeScreen
 import com.lauren.serveconnect.ui.login.LoginScreen
@@ -50,8 +52,54 @@ class MainActivity : ComponentActivity() {
                 val authViewModel: AuthViewModel = viewModel()
                 val serviceViewModel: ServiceViewModel = viewModel()
                 val chatViewModel: ChatViewModel = viewModel()
+                
+                authViewModel.initAccountManager(context)
 
                 val userDetails by authViewModel.userDetails.collectAsState()
+                val authState by authViewModel.authState.collectAsState()
+                
+                val notificationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                    androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+                ) { isGranted -> }
+
+                LaunchedEffect(Unit) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+
+                LaunchedEffect(authState) {
+                    if (authState is AuthState.Success) {
+                        navController.navigate("home") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    } else if (authState is AuthState.Error) {
+                        Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                val notificationHelper = remember { com.lauren.serveconnect.utils.NotificationHelper(context) }
+                
+                LaunchedEffect(auth.currentUser) {
+                    auth.currentUser?.uid?.let { uid ->
+                        chatViewModel.fetchTotalUnreadCount(uid)
+                    }
+                }
+                
+                // Simplified notification trigger: 
+                // Listen to messages globally and show notification for unread ones.
+                // In a real app, this should be in a Background Service with FCM.
+                val totalUnread by chatViewModel.totalUnreadCount.collectAsState()
+                var lastKnownUnread by remember { mutableIntStateOf(0) }
+                
+                LaunchedEffect(totalUnread) {
+                    if (totalUnread > lastKnownUnread) {
+                        // For simplicity, we just show a generic "New Message" notification
+                        // since we don't want to fetch user names here to avoid complexity.
+                        notificationHelper.showNotification("ServeConnect", "You have a new message", "global")
+                    }
+                    lastKnownUnread = totalUnread
+                }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
@@ -79,18 +127,6 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate("signup")
                                     }
                                 )
-
-                                val authState by authViewModel.authState.collectAsState()
-                                LaunchedEffect(authState) {
-                                    if (authState is AuthState.Success) {
-                                        authViewModel.fetchUserDetails()
-                                        navController.navigate("home") {
-                                            popUpTo("login") { inclusive = true }
-                                        }
-                                    } else if (authState is AuthState.Error) {
-                                        Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_SHORT).show()
-                                    }
-                                }
                             }
                             composable("signup") {
                                 SignUpScreen(
@@ -101,22 +137,12 @@ class MainActivity : ComponentActivity() {
                                         navController.popBackStack()
                                     }
                                 )
-                                
-                                // Observe auth state to navigate on success
-                                val authState by authViewModel.authState.collectAsState()
-                                LaunchedEffect(authState) {
-                                    if (authState is AuthState.Success) {
-                                        navController.navigate("home") {
-                                            popUpTo("signup") { inclusive = true }
-                                        }
-                                    } else if (authState is AuthState.Error) {
-                                        Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_SHORT).show()
-                                    }
-                                }
                             }
                             composable("home") {
+                                // Add a debug check if needed, but the robust check in HomeScreen should fix it.
                                 HomeScreen(
                                     currentUserId = auth.currentUser?.uid ?: "",
+                                    userRole = userDetails?.role ?: "",
                                     onPostServiceClick = {
                                         navController.navigate("post_service")
                                     },
@@ -131,6 +157,22 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onMessagesClick = {
                                         navController.navigate("chat_list")
+                                    },
+                                    onSavedClick = {
+                                        navController.navigate("saved_services")
+                                    },
+                                    viewModel = serviceViewModel
+                                )
+                            }
+                            composable("saved_services") {
+                                com.lauren.serveconnect.ui.home.SavedServicesScreen(
+                                    currentUserId = auth.currentUser?.uid ?: "",
+                                    onBackClick = { navController.popBackStack() },
+                                    onChatClick = { service ->
+                                        navController.navigate("chat/${service.providerId}/${service.providerName}")
+                                    },
+                                    onEditServiceClick = { service ->
+                                        navController.navigate("post_service?serviceId=${service.id}")
                                     },
                                     viewModel = serviceViewModel
                                 )

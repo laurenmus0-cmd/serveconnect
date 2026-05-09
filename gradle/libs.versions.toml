@@ -12,8 +12,10 @@ googleServices = "4.4.2"
 kotlin = "2.2.10"
 composeBom = "2026.02.01"
 coil = "2.7.0"
+gson = "2.11.0"
 
 [libraries]
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 google-firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }

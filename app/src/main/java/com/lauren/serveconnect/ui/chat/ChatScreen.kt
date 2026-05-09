@@ -40,6 +40,14 @@ fun ChatScreen(
 
     LaunchedEffect(otherUserId) {
         viewModel.fetchMessages(currentUserId, otherUserId)
+        viewModel.markAsRead(currentUserId, otherUserId)
+    }
+
+    // Mark as read when new messages arrive while screen is open
+    LaunchedEffect(messages) {
+        if (messages.any { it.receiverId == currentUserId && !it.read }) {
+            viewModel.markAsRead(currentUserId, otherUserId)
+        }
     }
 
     // Scroll to bottom when new messages arrive

@@ -131,23 +131,41 @@ fun ChatItem(chat: ChatSummary, onClick: () -> Unit) {
                 Text(
                     text = chat.otherUserName,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = if (chat.unreadCount > 0) FontWeight.ExtraBold else FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = formatChatTime(chat.timestamp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
+                    color = if (chat.unreadCount > 0) MaterialTheme.colorScheme.primary else Color.Gray,
+                    fontWeight = if (chat.unreadCount > 0) FontWeight.Bold else FontWeight.Normal
                 )
             }
-            Text(
-                text = chat.lastMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = chat.lastMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (chat.unreadCount > 0) MaterialTheme.colorScheme.onBackground else Color.Gray,
+                    fontWeight = if (chat.unreadCount > 0) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                if (chat.unreadCount > 0) {
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Text(chat.unreadCount.toString())
+                    }
+                }
+            }
         }
     }
 }

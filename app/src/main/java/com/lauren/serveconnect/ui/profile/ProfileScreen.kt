@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.lauren.serveconnect.model.ServicePost
+import com.lauren.serveconnect.models.User
 import com.lauren.serveconnect.ui.home.ServiceItem
 import com.lauren.serveconnect.viewmodel.AuthViewModel
 import com.lauren.serveconnect.viewmodel.ServiceViewModel
@@ -324,35 +325,78 @@ fun ProfileScreen(
             ProfileInfoItem(icon = Icons.Default.Phone, label = "Phone Number", value = userDetails?.phone ?: "N/A")
             ProfileInfoItem(icon = Icons.Default.LocationOn, label = "Work Location", value = userDetails?.location ?: "Not set")
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // Account Switcher Section
+            val savedAccounts by authViewModel.savedAccounts.collectAsState()
+            if (savedAccounts.size > 1) {
+                Spacer(modifier = Modifier.height(32.dp))
+                Text(
+                    text = "Switch Account",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                )
+                savedAccounts.filter { it.uid != currentUserId }.forEach { account ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable { authViewModel.switchAccount(account) },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(account.fullName.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(account.fullName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                Text(account.email, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                            }
+                        }
+                    }
+                }
+            }
 
-            Text(
-                text = "My Posted Services",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                color = MaterialTheme.colorScheme.onBackground
-            )
+            // Only show "My Posted Services" if user is a Service Provider
+            if (userDetails?.role == com.lauren.serveconnect.utils.Constants.ROLE_PROVIDER) {
+                Spacer(modifier = Modifier.height(32.dp))
 
-            if (filteredServices.isEmpty()) {
-                Box(
+                Text(
+                    text = "My Posted Services",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("You haven't posted any services yet.", color = Color.Gray)
-                }
-            } else {
-                filteredServices.forEach { service ->
-                    ServiceItem(
-                        service = service,
-                        isOwner = true,
-                        onChatClick = {}, // Not needed for owner
-                        onEditClick = { onEditServiceClick(service) }
-                    )
+                        .padding(vertical = 16.dp),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                if (filteredServices.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("You haven't posted any services yet.", color = Color.Gray)
+                    }
+                } else {
+                    filteredServices.forEach { service ->
+                        ServiceItem(
+                            service = service,
+                            isOwner = true,
+                            onChatClick = {}, // Not needed for owner
+                            onEditClick = { onEditServiceClick(service) },
+                            onSaveToggle = {}
+                        )
+                    }
                 }
             }
             

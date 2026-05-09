@@ -8,6 +8,7 @@ object Constants {
     const val COLLECTION_BOOKINGS = "bookings"
     const val COLLECTION_REVIEWS = "reviews"
     const val COLLECTION_MESSAGES = "messages"
+    const val COLLECTION_SAVED_SERVICES = "saved_services"
 
     // User Roles
     const val ROLE_SEEKER = "seeker"

@@ -75,4 +75,33 @@ class ChatRepository {
             .addOnSuccessListener { onComplete(true) }
             .addOnFailureListener { onComplete(false) }
     }
+
+    fun markMessagesAsRead(currentUserId: String, otherUserId: String) {
+        firestore.collection(Constants.COLLECTION_MESSAGES)
+            .whereEqualTo("senderId", otherUserId)
+            .whereEqualTo("receiverId", currentUserId)
+            .whereEqualTo("read", false)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val batch = firestore.batch()
+                snapshot.documents.forEach { doc ->
+                    batch.update(doc.reference, "read", true)
+                }
+                batch.commit()
+            }
+    }
+
+    fun getUnreadCountFlow(userId: String): Flow<Int> = callbackFlow {
+        val subscription = firestore.collection(Constants.COLLECTION_MESSAGES)
+            .whereEqualTo("receiverId", userId)
+            .whereEqualTo("read", false)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                trySend(snapshot?.size() ?: 0)
+            }
+        awaitClose { subscription.remove() }
+    }
 }

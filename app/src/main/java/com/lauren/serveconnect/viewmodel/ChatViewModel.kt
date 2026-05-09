@@ -5,12 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.lauren.serveconnect.model.ChatMessage
 import com.lauren.serveconnect.model.ChatSummary
 import com.lauren.serveconnect.repository.ChatRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 
 class ChatViewModel : ViewModel() {
     private val repository = ChatRepository()
@@ -20,6 +19,21 @@ class ChatViewModel : ViewModel() {
 
     private val _chatList = MutableStateFlow<List<ChatSummary>>(emptyList())
     val chatList: StateFlow<List<ChatSummary>> = _chatList
+
+    private val _totalUnreadCount = MutableStateFlow(0)
+    val totalUnreadCount: StateFlow<Int> = _totalUnreadCount
+
+    fun fetchTotalUnreadCount(userId: String) {
+        viewModelScope.launch {
+            repository.getUnreadCountFlow(userId).collect {
+                _totalUnreadCount.value = it
+            }
+        }
+    }
+
+    fun markAsRead(currentUserId: String, otherUserId: String) {
+        repository.markMessagesAsRead(currentUserId, otherUserId)
+    }
 
     fun fetchChatList(currentUserId: String) {
         viewModelScope.launch {
@@ -33,11 +47,14 @@ class ChatViewModel : ViewModel() {
                     async {
                         val lastMsg = msgs.maxByOrNull { it.timestamp }
                         val name = repository.getUserName(otherId)
+                        val unreadCount = msgs.count { it.receiverId == currentUserId && !it.read }
+                        
                         ChatSummary(
                             otherUserId = otherId,
                             otherUserName = name,
                             lastMessage = lastMsg?.message ?: "",
-                            timestamp = lastMsg?.timestamp ?: 0L
+                            timestamp = lastMsg?.timestamp ?: 0L,
+                            unreadCount = unreadCount
                         )
                     }
                 }.awaitAll().sortedByDescending { it.timestamp }
@@ -62,7 +79,8 @@ class ChatViewModel : ViewModel() {
             senderId = senderId,
             receiverId = receiverId,
             message = text,
-            timestamp = System.currentTimeMillis()
+            timestamp = System.currentTimeMillis(),
+            read = false
         )
         
         repository.sendMessage(message) { /* Handle success/failure if needed */ }

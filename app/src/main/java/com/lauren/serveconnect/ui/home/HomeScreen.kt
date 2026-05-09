@@ -8,10 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,20 +20,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lauren.serveconnect.model.ServicePost
+import com.lauren.serveconnect.utils.Constants
 import com.lauren.serveconnect.viewmodel.ServiceViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     currentUserId: String,
+    userRole: String,
     onPostServiceClick: () -> Unit,
     onEditServiceClick: (ServicePost) -> Unit,
     onChatClick: (ServicePost) -> Unit,
     onProfileClick: () -> Unit,
     onMessagesClick: () -> Unit,
-    viewModel: ServiceViewModel = viewModel()
+    onSavedClick: () -> Unit,
+    viewModel: ServiceViewModel = viewModel(),
+    chatViewModel: com.lauren.serveconnect.viewmodel.ChatViewModel = viewModel()
 ) {
     val services by viewModel.services.collectAsState()
+    val savedServiceIds by viewModel.savedServiceIds.collectAsState()
+    val unreadCount by chatViewModel.totalUnreadCount.collectAsState()
+
+    LaunchedEffect(currentUserId) {
+        if (currentUserId.isNotEmpty()) {
+            viewModel.fetchSavedServices(currentUserId)
+            chatViewModel.fetchTotalUnreadCount(currentUserId)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -44,25 +54,47 @@ fun HomeScreen(
                 title = { Text("ServeConnect", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.Black
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
+                    IconButton(onClick = onSavedClick) {
+                        Icon(Icons.Default.BookmarkBorder, contentDescription = "Saved", tint = MaterialTheme.colorScheme.onPrimary)
+                    }
                     IconButton(onClick = onMessagesClick) {
-                        Icon(Icons.Default.Chat, contentDescription = "Messages", tint = Color.Black)
+                        BadgedBox(
+                            badge = {
+                                if (unreadCount > 0) {
+                                    Badge(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        contentColor = Color.White
+                                    ) {
+                                        Text(unreadCount.toString())
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.Chat, contentDescription = "Messages", tint = MaterialTheme.colorScheme.onPrimary)
+                        }
                     }
                     IconButton(onClick = onProfileClick) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile", tint = Color.Black)
+                        Icon(Icons.Default.Person, contentDescription = "Profile", tint = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onPostServiceClick,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.Black
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Post Service")
+            // Updated check to be more robust (handles "provider" and "Service Provider")
+            val isProvider = userRole.equals(Constants.ROLE_PROVIDER, ignoreCase = true) || 
+                             userRole.equals("Service Provider", ignoreCase = true)
+            
+            if (isProvider) {
+                FloatingActionButton(
+                    onClick = onPostServiceClick,
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Post Service")
+                }
             }
         }
     ) { padding ->
@@ -82,7 +114,7 @@ fun HomeScreen(
 
             if (services.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No services available. Be the first to post!", color = Color.Gray)
+                    Text("No services available. Be the first to post!", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
                 }
             } else {
                 LazyColumn(
@@ -90,11 +122,14 @@ fun HomeScreen(
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     items(services) { service ->
+                        val isSaved = savedServiceIds.contains(service.id)
                         ServiceItem(
                             service = service,
                             isOwner = service.providerId == currentUserId,
+                            isSaved = isSaved,
                             onChatClick = { onChatClick(service) },
-                            onEditClick = { onEditServiceClick(service) }
+                            onEditClick = { onEditServiceClick(service) },
+                            onSaveToggle = { viewModel.toggleSaveService(currentUserId, service.id) }
                         )
                     }
                 }
@@ -107,18 +142,19 @@ fun HomeScreen(
 fun ServiceItem(
     service: ServicePost,
     isOwner: Boolean,
+    isSaved: Boolean = false,
     onChatClick: () -> Unit,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    onSaveToggle: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFFDE7) // Light yellow tint background
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(6.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+        elevation = CardDefaults.cardElevation(4.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
@@ -129,24 +165,35 @@ fun ServiceItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = service.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.secondary // Blue
-                )
-                
-                Surface(
-                    color = MaterialTheme.colorScheme.primary, // Yellow
-                    shape = RoundedCornerShape(12.dp)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = service.price,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Color.Black,
+                        text = service.title,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        color = MaterialTheme.colorScheme.primary
                     )
+                }
+                
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onSaveToggle) {
+                        Icon(
+                            imageVector = if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = "Save",
+                            tint = if (isSaved) MaterialTheme.colorScheme.primary else Color.Gray
+                        )
+                    }
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = service.price,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
 
@@ -155,23 +202,24 @@ fun ServiceItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)),
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = service.providerName.take(1).uppercase(),
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 14.sp
                     )
                 }
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "By ${service.providerName}",
+                    text = service.providerName,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Black
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
             }
 
@@ -180,7 +228,7 @@ fun ServiceItem(
             Text(
                 text = service.description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.DarkGray,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 maxLines = 2,
                 lineHeight = 20.sp
             )
@@ -192,28 +240,26 @@ fun ServiceItem(
                     onClick = onEditClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary // Yellow
+                        containerColor = MaterialTheme.colorScheme.primary
                     ),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(vertical = 12.dp)
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.Black)
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Edit My Service", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+                    Text("Edit My Service", fontWeight = FontWeight.Bold)
                 }
             } else {
                 Button(
                     onClick = onChatClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary // Blue
+                        containerColor = MaterialTheme.colorScheme.primary
                     ),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(vertical = 12.dp)
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Message Provider", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Message Provider", fontWeight = FontWeight.Bold)
                 }
             }
         }
